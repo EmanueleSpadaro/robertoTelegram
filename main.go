@@ -125,6 +125,7 @@ func main() {
 				queryParams := url.Values{}
 				queryParams.Set("token", restRobertoToken)
 				queryParams.Set("text", query)
+				queryParams.Set("voice", libroberto.Voice)
 
 				endpoint.RawQuery = queryParams.Encode()
 				resp, err := http.Get(endpoint.String())
