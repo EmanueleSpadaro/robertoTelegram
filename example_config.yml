@@ -10,3 +10,9 @@ voice: Roberto
 # A group or channel to send audio to.
 # Needed as telegram bots can't send file directly when using inline mode.
 channel: -123456789
+
+# REST endpoint for Roberto voice synthesis
+restroberto: "http://localhost:8087/audio"
+
+# Token for REST endpoint authentication
+restrobertotoken: "token1"

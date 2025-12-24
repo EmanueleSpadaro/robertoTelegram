@@ -1,19 +1,25 @@
 package main
 
 import (
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/TheTipo01/libRoberto"
 	"github.com/bwmarrin/lit"
 	"github.com/kkyr/fig"
 	tb "gopkg.in/telebot.v3"
-	"strings"
-	"time"
 )
 
 type config struct {
-	Token    string `fig:"token" validate:"required"`
-	LogLevel string `fig:"loglevel" validate:"required"`
-	Voice    string `fig:"voice" validate:"required"`
-	Channel  int64  `fig:"channel" validate:"required"`
+	Token            string `fig:"token" validate:"required"`
+	LogLevel         string `fig:"loglevel" validate:"required"`
+	Voice            string `fig:"voice" validate:"required"`
+	Channel          int64  `fig:"channel" validate:"required"`
+	RestRoberto      string `fig:"restroberto"`
+	RestRobertoToken string `fig:"restrobertotoken"`
 }
 
 const (
@@ -29,6 +35,10 @@ var (
 		"\\{", "}", "\\}", ".", "\\.", "!", "\\!")
 	// Channel where to send the audio
 	channel int64
+	// Endpoint for rest roberto
+	restRoberto string
+	// Token for rest roberto
+	restRobertoToken string
 )
 
 func init() {
@@ -45,6 +55,8 @@ func init() {
 	token = cfg.Token
 	libroberto.Voice = cfg.Voice
 	channel = cfg.Channel
+	restRoberto = cfg.RestRoberto
+	restRobertoToken = cfg.RestRobertoToken
 
 	// Set lit.LogLevel to the given value
 	switch strings.ToLower(cfg.LogLevel) {
@@ -103,8 +115,31 @@ func main() {
 				isCommand = false
 			}
 
+			var out io.ReadCloser
 			cmds := libroberto.GenAudioPipes(query, audioType)
-			out, _ := cmds[1].StdoutPipe()
+			if restRoberto != "" {
+				cmds = cmds[1:2]
+				// Setup query parameters
+				endpoint, _ := url.Parse(restRoberto)
+
+				queryParams := url.Values{}
+				queryParams.Set("token", restRobertoToken)
+				queryParams.Set("text", query)
+
+				endpoint.RawQuery = queryParams.Encode()
+				resp, err := http.Get(endpoint.String())
+				if err != nil {
+					lit.Error("Error calling restRoberto: %s", err.Error())
+					return nil
+				}
+
+				// Get the response and give it to the first command
+				cmds[0].Stdin = resp.Body
+
+				out, _ = cmds[0].StdoutPipe()
+			} else {
+				out, _ = cmds[1].StdoutPipe()
+			}
 			libroberto.CmdsStart(cmds)
 
 			// So the title of the result isn't all uppercase when there's no command
