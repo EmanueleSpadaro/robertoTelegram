@@ -183,6 +183,10 @@ func main() {
 		return nil
 	})
 
+	b.Handle("/start", func(c tb.Context) error {
+		return c.Reply("Ciao! Sono un bot open source per la sintesi vocale. Il codice sorgente è disponibile su GitHub: https://github.com/TheTipo01/robertoTelegram")
+	})
+
 	b.Handle(tb.OnText, func(c tb.Context) error {
 		if c.Chat().Type != tb.ChatPrivate {
 			return nil
